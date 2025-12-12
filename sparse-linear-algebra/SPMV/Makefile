@@ -1,44 +1,24 @@
-# Makefile for SPMV (three-file build: main.cpp, spmv_serial.cpp, spmv_parallel.cpp)
-# Usage:
-#   make            # build ./spmv
-#   make run-c      # run correctness/timings on hollywood-2009
-#   make run-p      # profile all matrices under ../data (writes ../output/spmv_profile.csv)
-#   make download   # fetch & extract datasets (expects scripts/get_data.sh)
-#   make clean
-#
-# Note: On very old GCC (e.g., 8.x), you may need:  make LIBS=-lstdc++fs
+# Makefile for SPMV 
+# Parallel version uses OpenMP
 
-CXX       ?= g++
-CXXFLAGS  ?= -O3 -std=c++17 -Wall -Wextra -pedantic
-LDFLAGS   ?=
-LIBS      ?=
+CXX = g++
+CXXFLAGS = -O3 -std=c++17 -Wall -Wextra -pedantic -fopenmp
 
-SRCS = main.cpp spmv_serial.cpp spmv_parallel.cpp
-OBJS = $(SRCS:.cpp=.o)
-BIN  = spmv
+all: spmv
 
-all: $(BIN)
+spmv: main.o spmv_serial.o spmv_parallel.o
+	$(CXX) $(CXXFLAGS) main.o spmv_serial.o spmv_parallel.o -o spmv
 
-$(BIN): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+main.o: main.cpp
+	$(CXX) $(CXXFLAGS) -c main.cpp
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+spmv_serial.o: spmv_serial.cpp
+	$(CXX) $(CXXFLAGS) -c spmv_serial.cpp
 
-run-c: $(BIN)
-	./$(BIN) -c
-
-run-p: $(BIN)
-	./$(BIN) -p
-
-run-both: $(BIN)
-	./$(BIN) -c -p
-
-download:
-	bash scripts/get_data.sh
+spmv_parallel.o: spmv_parallel.cpp
+	$(CXX) $(CXXFLAGS) -c spmv_parallel.cpp
 
 clean:
-	rm -f $(OBJS) $(BIN)
+	rm -f *.o spmv
 
-.PHONY: all run-c run-p run-both download clean
-
+.PHONY: all clean
